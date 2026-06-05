@@ -1,0 +1,10 @@
+const router = require('express').Router();
+const ctrl = require('../controllers/complaint.controller');
+const { auth, roleGuard } = require('../middleware/auth');
+const { locationScope } = require('../middleware/locationScope');
+const upload = require('../middleware/upload');
+router.get('/', auth, locationScope, ctrl.getAll);
+router.get('/:id', auth, locationScope, ctrl.getById);
+router.post('/', auth, roleGuard('citizen'), upload.single('photo'), ctrl.create);
+router.put('/:id/status', auth, roleGuard('manager'), ctrl.updateStatus);
+module.exports = router;
