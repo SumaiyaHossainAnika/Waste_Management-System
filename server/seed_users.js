@@ -8,13 +8,13 @@ async function seed() {
     const hash = await bcrypt.hash('1234', salt);
 
     // Manager
-    const managerExist = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', ['anika@gmail.com']);
+    const managerExist = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', ['karim@gmail.com']);
     if (managerExist.rows.length === 0) {
       await pool.query(
         'INSERT INTO users (email, password_hash, full_name, role, assigned_location_id) VALUES ($1, $2, $3, $4, 2)',
-        ['anika@gmail.com', hash, 'Sumaiya Hossain Anika', 'manager']
+        ['karim@gmail.com', hash, 'Karim', 'manager']
       );
-      console.log('✓ Created Manager: anika@gmail.com / 1234');
+      console.log('✓ Created Manager: karim@gmail.com / 1234');
     } else {
       console.log('Manager already exists.');
     }

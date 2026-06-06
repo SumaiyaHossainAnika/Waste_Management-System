@@ -451,9 +451,9 @@ async function main() {
     // Manager
     await client.query(
       'INSERT INTO users (email, password_hash, full_name, role, assigned_location_id) VALUES ($1, $2, $3, $4, 2)',
-      ['anika@gmail.com', hash, 'Sumaiya Hossain Anika', 'manager']
+      ['karim@gmail.com', hash, 'Karim', 'manager']
     );
-    console.log('✓ Created Manager: anika@gmail.com / 1234');
+    console.log('✓ Created Manager: karim@gmail.com / 1234');
 
     // Citizen
     const citizenRes = await client.query(

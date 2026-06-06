@@ -523,7 +523,7 @@ export default function RoadAnalyzer() {
         </div>
 
         {/* Map Panel */}
-        <div className="lg:col-span-2 glass rounded-2xl overflow-hidden border border-eco-primary/10" style={{ height: 'calc(100vh - 220px)', minHeight: '550px' }}>
+        <div className="lg:col-span-2 glass rounded-2xl overflow-hidden border border-eco-primary/10 responsive-map-container analyzer">
           <MapContainer center={center} zoom={14.5} style={{ height: '100%', width: '100%' }}>
             <TileLayer 
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 

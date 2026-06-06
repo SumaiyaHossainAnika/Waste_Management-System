@@ -105,7 +105,7 @@ export default function MapExplorer() {
       </div>
 
       {/* Map */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass rounded-2xl overflow-hidden" style={{ height: 'calc(100vh - 260px)' }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass rounded-2xl overflow-hidden responsive-map-container explorer">
         <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={true}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

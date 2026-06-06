@@ -84,7 +84,7 @@ export default function ReportIssue() {
             </h3>
             <p className="text-eco-secondary text-xs ml-9">Click on the map to pin the issue location</p>
           </div>
-          <div className="h-80 mx-8 my-8 rounded-xl overflow-hidden border border-eco-primary/20">
+          <div className="h-80 mx-4 my-4 sm:mx-8 sm:my-8 rounded-xl overflow-hidden border border-eco-primary/20">
             <MapContainer center={[23.81, 90.377]} zoom={13} style={{ height: '100%', width: '100%' }}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
               <LocationPicker position={position} setPosition={setPosition} />

@@ -753,8 +753,7 @@ export default function RouteManager() {
         {/* Map Panel & Direction List */}
         <div className="lg:col-span-2 space-y-6">
           <div
-            className="glass rounded-2xl overflow-hidden border border-eco-primary/10"
-            style={{ height: 'calc(100vh - 350px)', minHeight: '420px' }}
+            className="glass rounded-2xl overflow-hidden border border-eco-primary/10 responsive-map-container optimizer"
           >
             <MapContainer center={center} zoom={14.5} style={{ height: '100%', width: '100%' }}>
               <TileLayer

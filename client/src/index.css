@@ -52,6 +52,7 @@ body {
 .leaflet-container {
   background: var(--color-eco-surface) !important;
   border-radius: 12px;
+  z-index: 1 !important; /* Ensure map container stays behind sidebars and headers */
 }
 .leaflet-control-zoom a {
   background: var(--color-eco-surface) !important;
@@ -70,16 +71,32 @@ body {
 
 /* Glass morphism utility */
 .glass {
-  background: rgba(17, 46, 40, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(17, 46, 40, 0.85); /* Mobile performance fallback */
   border: 1px solid rgba(100, 179, 154, 0.15);
 }
 .glass-light {
-  background: rgba(240, 250, 244, 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(240, 250, 244, 0.18);
   border: 1px solid rgba(162, 220, 163, 0.12);
+}
+
+@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+  @media (min-width: 768px) {
+    .glass {
+      background: rgba(17, 46, 40, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+  }
+}
+
+@supports (backdrop-filter: blur(16px)) or (-webkit-backdrop-filter: blur(16px)) {
+  @media (min-width: 768px) {
+    .glass-light {
+      background: rgba(240, 250, 244, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+  }
 }
 
 /* Text gradient */
@@ -284,7 +301,7 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
-  z-index: 30;
+  z-index: 9999 !important; /* Ensure overlay is on top of all content, including Leaflet maps */
 }
 
 @media (min-width: 1024px) {
@@ -301,7 +318,7 @@ body {
   width: 260px;
   background: var(--color-eco-surface);
   border-right: 1px solid rgba(45, 120, 104, 0.2);
-  z-index: 40;
+  z-index: 10000 !important; /* Ensure sidebar is on top of overlay and maps */
   display: flex;
   flex-direction: column;
 }
@@ -333,6 +350,8 @@ body {
   padding: 0 24px;
   flex-shrink: 0;
   gap: 16px;
+  position: relative;
+  z-index: 10; /* Keep topbar above scrolling content/maps */
 }
 
 .manager-content {
@@ -1278,13 +1297,46 @@ p {
 
 /* Overwrite all glass cards to match the feature-card styling */
 .glass {
-  background: rgba(17, 46, 40, 0.5) !important;
+  background: rgba(17, 46, 40, 0.85) !important; /* Mobile performance fallback */
   border: 1px solid rgba(100, 179, 154, 0.12) !important;
   border-radius: 20px !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
+
+@supports (backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px)) {
+  @media (min-width: 768px) {
+    .glass {
+      background: rgba(17, 46, 40, 0.5) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+    }
+  }
+}
+
+/* Responsive Map Container styles for various page maps */
+.responsive-map-container {
+  height: 320px !important;
+  min-height: 280px !important;
+  width: 100% !important;
+}
+
+@media (min-width: 1024px) {
+  .responsive-map-container.explorer {
+    height: calc(100vh - 260px) !important;
+    min-height: 480px !important;
+  }
+  .responsive-map-container.analyzer {
+    height: calc(100vh - 220px) !important;
+    min-height: 550px !important;
+  }
+  .responsive-map-container.optimizer {
+    height: calc(100vh - 350px) !important;
+    min-height: 420px !important;
+  }
+}
+
 
 /* Explicit Card Padding Fallbacks to prevent elements touching borders */
 .glass.p-8,
