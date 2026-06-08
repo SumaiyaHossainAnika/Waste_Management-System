@@ -11,6 +11,35 @@ const statusConfig = {
   rejected: { icon: faXmark, color: 'bg-red-500/15 text-red-400 border-red-500/20', label: 'Rejected', barColor: 'bg-red-400' },
 };
 
+const getPhotoUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+
+  let apiBase = '';
+  const baseURL = import.meta.env.VITE_API_URL;
+  
+  if (baseURL) {
+    apiBase = baseURL.endsWith('/api') ? baseURL.slice(0, -4) : baseURL;
+  } else {
+    const currentHostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    apiBase = `${protocol}//${currentHostname}:5000`;
+  }
+
+  const currentHostname = window.location.hostname;
+  if (currentHostname !== 'localhost' && currentHostname !== '127.0.0.1') {
+    apiBase = apiBase
+      .replace('://localhost:', `://${currentHostname}:`)
+      .replace('://127.0.0.1:', `://${currentHostname}:`);
+  }
+
+  if (window.location.protocol === 'https:') {
+    apiBase = apiBase.replace(/^http:\/\//i, 'https://');
+  }
+
+  return `${apiBase}${url}`;
+};
+
 export default function MyComplaints() {
   const [complaints, setComplaints] = useState([]);
   const [filter, setFilter] = useState('');
@@ -57,8 +86,8 @@ export default function MyComplaints() {
               <p className="text-eco-secondary text-base mb-6 leading-relaxed">{c.description}</p>
               {c.photo_url && (
                 <>
-                  <div className="rounded-xl overflow-hidden max-w-sm border border-eco-primary/15 shadow-lg shadow-black/20">
-                    <img src={c.photo_url} alt="Reported issue" className="w-full h-auto object-cover max-h-64" />
+                  <div className="rounded-xl overflow-hidden w-full max-w-sm border border-eco-primary/15 shadow-lg shadow-black/20">
+                    <img src={getPhotoUrl(c.photo_url)} alt="Reported issue" className="w-full h-auto object-cover max-h-64" />
                   </div>
                   <div className="h-6" />
                 </>

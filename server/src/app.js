@@ -15,10 +15,15 @@ const allowedOrigins = [
   'https://waste-management-system-wheat-beta.vercel.app'
 ];
 
+const isDev = process.env.NODE_ENV === 'development';
+
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
+    if (!origin || isDev) return callback(null, true);
     if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    if (origin.startsWith('http://192.168.') || origin.startsWith('http://10.') || origin.startsWith('http://172.')) {
       return callback(null, true);
     }
     return callback(new Error('CORS not allowed'), false);
