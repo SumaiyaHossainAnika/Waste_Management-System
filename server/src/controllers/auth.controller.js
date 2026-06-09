@@ -67,7 +67,7 @@ exports.login = async (req, res) => {
     const { password_hash, ...userData } = user;
     // Include location info for managers
     if (userData.role === 'manager' && userData.assigned_location_id) {
-      const locResult = await pool.query('SELECT id, name, covered_area, wards FROM locations WHERE id = $1', [userData.assigned_location_id]);
+      const locResult = await pool.query('SELECT id, name, covered_area, wards, total_employees, daily_load_tons FROM locations WHERE id = $1', [userData.assigned_location_id]);
       if (locResult.rows.length > 0) {
         userData.assignedLocation = locResult.rows[0];
       }
@@ -91,7 +91,7 @@ exports.getMe = async (req, res) => {
     const user = result.rows[0];
     // Include location info for managers
     if (user.role === 'manager' && user.assigned_location_id) {
-      const locResult = await pool.query('SELECT id, name, covered_area, wards FROM locations WHERE id = $1', [user.assigned_location_id]);
+      const locResult = await pool.query('SELECT id, name, covered_area, wards, total_employees, daily_load_tons FROM locations WHERE id = $1', [user.assigned_location_id]);
       if (locResult.rows.length > 0) {
         user.assignedLocation = locResult.rows[0];
       }

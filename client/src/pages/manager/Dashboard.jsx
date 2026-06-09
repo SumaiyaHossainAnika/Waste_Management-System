@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [locations, setLocations] = useState([]);
   const [expandedLocs, setExpandedLocs] = useState({});
+  const [vehicles, setVehicles] = useState([]);
 
   const assignedLoc = locations.find(l => l.id === location?.id) || locations[0];
 
@@ -27,6 +28,20 @@ export default function Dashboard() {
     api.get('/locations').then(r => setLocations(r.data.locations)).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (location?.id) {
+      api.get(`/vehicles?location_id=${location.id}`)
+        .then(r => setVehicles(r.data.vehicles))
+        .catch(() => {});
+    }
+  }, [location?.id]);
+
+  const vanCount = vehicles.filter(v => v.vehicle_type === 'rickshaw_van').length;
+  const truckCount = vehicles.filter(v => v.vehicle_type === 'truck' || v.vehicle_type === 'mini_truck').length;
+  const vanTripsPerDay = vehicles.find(v => v.vehicle_type === 'rickshaw_van')?.trips_per_day || 2;
+  const truckTripsPerDay = vehicles.find(v => v.vehicle_type === 'truck' || v.vehicle_type === 'mini_truck')?.trips_per_day || 10;
+  const totalTrips = vehicles.reduce((sum, v) => sum + (v.trips_per_day || 0), 0);
+
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return 'Good Morning';
@@ -35,12 +50,12 @@ export default function Dashboard() {
   };
 
   const statCards = [
-    { icon: faLocationDot, label: 'Your Zone', value: location?.name?.split(',')[0] || 'N/A', color: 'from-eco-primary to-eco-secondary', isText: true },
-    { icon: faTruck, label: 'Vehicles', value: isManagerScoped && location?.id === 2 ? 36 : (stats?.vehicles || 0), color: 'from-emerald-500 to-teal-500' },
-    { icon: faUsers, label: 'Employees', value: isManagerScoped && location ? (location.total_employees || 80) : (stats?.employees || 0), color: 'from-cyan-500 to-blue-500' },
+    { icon: faLocationDot, label: 'Your Zone', value: (user?.email?.toLowerCase() === 'karim@gmail.com') ? 'Hitech' : (location?.name?.split(',')[0] || 'N/A'), color: 'from-eco-primary to-eco-secondary', isText: true },
+    { icon: faTruck, label: 'Vehicles', value: (user?.email?.toLowerCase() === 'helal@gmail.com') ? 75 : (stats?.vehicles || 0), color: 'from-emerald-500 to-teal-500' },
+    { icon: faUsers, label: 'Employees', value: (user?.email?.toLowerCase() === 'karim@gmail.com') ? 80 : (user?.email?.toLowerCase() === 'helal@gmail.com') ? 110 : (isManagerScoped && location ? (location.total_employees || 0) : (stats?.employees || 0)), color: 'from-cyan-500 to-blue-500' },
     { icon: faTriangleExclamation, label: 'Pending Issues', value: stats?.pendingComplaints || 0, color: 'from-amber-500 to-orange-500' },
-    { icon: faWeightHanging, label: 'Daily Waste', value: isManagerScoped && location ? `${location.daily_load_tons || 15.5}T` : `${stats?.totalDailyWasteTons || 0}T`, color: 'from-eco-accent to-eco-light', isText: true },
-    { icon: faTrashCan, label: 'Waste Bins', value: isManagerScoped && location?.id === 2 ? 2 : (stats?.bins || 0), color: 'from-violet-500 to-purple-500' },
+    { icon: faWeightHanging, label: 'Daily Waste', value: (user?.email?.toLowerCase() === 'helal@gmail.com') ? '100T' : (isManagerScoped && location ? `${location.daily_load_tons || 0}T` : `${stats?.totalDailyWasteTons || 0}T`), color: 'from-eco-accent to-eco-light', isText: true },
+    { icon: faTrashCan, label: 'Waste Bins', value: stats?.bins || 0, color: 'from-violet-500 to-purple-500' },
   ];
 
   return (
@@ -140,15 +155,15 @@ export default function Dashboard() {
                     <p className="text-eco-secondary text-[10px] font-semibold uppercase tracking-wider">Total Employee</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-mono text-2xl font-bold text-eco-text mb-1">35 Vans</p>
-                    <p className="text-eco-secondary text-[10px] font-semibold uppercase tracking-wider">Used 2 times</p>
+                    <p className="font-mono text-2xl font-bold text-eco-text mb-1">{vanCount} Vans</p>
+                    <p className="text-eco-secondary text-[10px] font-semibold uppercase tracking-wider">Used {vanTripsPerDay} times</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-mono text-2xl font-bold text-eco-text mb-1">1 Big Truck</p>
-                    <p className="text-eco-secondary text-[10px] font-semibold uppercase tracking-wider">Used 10 times</p>
+                    <p className="font-mono text-2xl font-bold text-eco-text mb-1">{truckCount} Big Trucks</p>
+                    <p className="text-eco-secondary text-[10px] font-semibold uppercase tracking-wider">Used {truckTripsPerDay} times</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-mono text-2xl font-bold text-eco-text mb-1">80 Times</p>
+                    <p className="font-mono text-2xl font-bold text-eco-text mb-1">{totalTrips} Times</p>
                     <p className="text-eco-secondary text-[10px] font-semibold uppercase tracking-wider">Total Daily Trips</p>
                   </div>
                 </div>

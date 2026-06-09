@@ -156,7 +156,7 @@ export default function Vehicles() {
               </tr>
             </thead>
             <tbody>
-              {filteredVehicles.slice(0, 50).map((v, i) => (
+              {filteredVehicles.map((v, i) => (
                 <motion.tr key={v.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
                   className="border-b border-eco-primary/8 hover:bg-eco-primary/5 transition-colors">
                   <td className="text-center px-6 py-8 text-eco-text font-mono text-sm font-medium">{v.plate_number || '--'}</td>

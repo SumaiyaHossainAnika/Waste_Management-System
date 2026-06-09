@@ -7,7 +7,7 @@ async function seed() {
     const salt = await bcrypt.genSalt(12);
     const hash = await bcrypt.hash('1234', salt);
 
-    // Manager
+    // Manager (Karim)
     const managerExist = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', ['karim@gmail.com']);
     if (managerExist.rows.length === 0) {
       await pool.query(
@@ -17,6 +17,18 @@ async function seed() {
       console.log('✓ Created Manager: karim@gmail.com / 1234');
     } else {
       console.log('Manager already exists.');
+    }
+
+    // Manager (Helal)
+    const helalExist = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', ['helal@gmail.com']);
+    if (helalExist.rows.length === 0) {
+      await pool.query(
+        'INSERT INTO users (email, password_hash, full_name, role, assigned_location_id) VALUES ($1, $2, $3, $4, 1)',
+        ['helal@gmail.com', hash, 'Helal', 'manager']
+      );
+      console.log('✓ Created Manager: helal@gmail.com / 1234');
+    } else {
+      console.log('Helal Manager already exists.');
     }
 
     // Citizen

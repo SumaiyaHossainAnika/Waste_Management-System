@@ -15,6 +15,8 @@ import {
   ResponsiveContainer, Legend,
 } from 'recharts';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useLocation } from '../../context/LocationContext';
 
 // ── Config ──────────────────────────────────────────────────
 const WASTE_TYPES = [
@@ -195,6 +197,10 @@ function DailyChart({ daily, activeFilter, setActiveFilter }) {
 // ── Main Page ────────────────────────────────────────────────
 export default function WasteCollection() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { location, isManagerScoped } = useLocation();
+  const isHelal = user?.email?.toLowerCase() === 'helal@gmail.com';
+
   const [summary, setSummary]     = useState(null);
   const [logs, setLogs]           = useState([]);
   const [filter, setFilter]       = useState('all');
@@ -229,39 +235,85 @@ export default function WasteCollection() {
         api.get('/vehicles').catch(() => ({ data: { vehicles: [] } })),
       ]);
 
-      const records = logsRes.data.records || [];
-      const summaryData = sumRes.data.summary || {};
-      
+      const allRecords = logsRes.data.records || [];
+      const fetchedLocations = locRes.data.locations || [];
+      const fetchedVehicles = vehRes.data.vehicles || [];
+
+      // Filter records/logs based on logged-in manager scope
+      const records = allRecords.filter(row => {
+        if (isHelal) {
+          return row.location_id >= 100 || row.location_id === 1;
+        } else if (isManagerScoped && location) {
+          return row.location_id === location.id;
+        }
+        return true;
+      });
+
+      // Group records by collection_date for daily chart
+      const dailyMap = {};
+      records.forEach(r => {
+        const dateStr = r.collection_date ? r.collection_date.slice(0, 10) : '';
+        if (!dateStr) return;
+        if (!dailyMap[dateStr]) {
+          dailyMap[dateStr] = {
+            collection_date: dateStr,
+            plastic: 0,
+            glass: 0,
+            food_waste: 0,
+            paper: 0,
+            metal: 0,
+            medical_waste: 0,
+            construction_waste: 0
+          };
+        }
+        dailyMap[dateStr].plastic += Number(r.plastic_tons) || 0;
+        dailyMap[dateStr].glass += Number(r.glass_tons) || 0;
+        dailyMap[dateStr].food_waste += Number(r.food_waste_tons) || 0;
+        dailyMap[dateStr].paper += Number(r.paper_tons) || 0;
+        dailyMap[dateStr].metal += Number(r.metal_tons) || 0;
+        dailyMap[dateStr].medical_waste += Number(r.medical_waste_tons) || 0;
+        dailyMap[dateStr].construction_waste += Number(r.construction_waste_tons) || 0;
+      });
+
+      const daily = Object.values(dailyMap).sort((a, b) => new Date(a.collection_date) - new Date(b.collection_date));
+
+      // Compute statistics based on filtered records
+      const totalPlastic = records.reduce((acc, r) => acc + (Number(r.plastic_tons) || 0), 0);
+      const totalGlass = records.reduce((acc, r) => acc + (Number(r.glass_tons) || 0), 0);
+      const totalOrganic = records.reduce((acc, r) => acc + (Number(r.food_waste_tons) || 0), 0);
+      const totalMixed = records.reduce((acc, r) => acc + (
+        (Number(r.paper_tons) || 0) +
+        (Number(r.metal_tons) || 0) +
+        (Number(r.medical_waste_tons) || 0) +
+        (Number(r.construction_waste_tons) || 0)
+      ), 0);
+      const totalWaste = totalPlastic + totalGlass + totalOrganic + totalMixed;
+
       const totals = [
-        { waste_type: 'plastic', total_tons: Number(summaryData.plastic) || 0, total_entries: records.length },
-        { waste_type: 'glass',   total_tons: Number(summaryData.glass) || 0,   total_entries: records.length },
-        { waste_type: 'organic', total_tons: Number(summaryData.food_waste) || 0, total_entries: records.length },
-        { waste_type: 'mixed',   total_tons: (
-            (Number(summaryData.paper) || 0) +
-            (Number(summaryData.metal) || 0) +
-            (Number(summaryData.medical_waste) || 0) +
-            (Number(summaryData.construction_waste) || 0)
-          ), total_entries: records.length }
+        { waste_type: 'plastic', total_tons: totalPlastic, total_entries: records.length },
+        { waste_type: 'glass',   total_tons: totalGlass,   total_entries: records.length },
+        { waste_type: 'organic', total_tons: totalOrganic, total_entries: records.length },
+        { waste_type: 'mixed',   total_tons: totalMixed,   total_entries: records.length }
       ];
 
       setSummary({
         grand: {
-          total_tons: Number(summaryData.total_waste) || 0,
+          total_tons: totalWaste,
           total_entries: records.length
         },
         totals,
-        daily: sumRes.data.daily || []
+        daily
       });
 
       setLogs(records);
-      setLocations(locRes.data.locations || []);
-      setVehicles(vehRes.data.vehicles || []);
+      setLocations(fetchedLocations);
+      setVehicles(fetchedVehicles);
     } catch (err) {
       console.error('[loadData] Error:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isHelal, isManagerScoped, location]);
 
   useEffect(() => {
     loadData();
@@ -378,6 +430,16 @@ export default function WasteCollection() {
     return true;
   });
 
+  const displayLocations = isHelal
+    ? locations.filter(l => l.id >= 100)
+    : (isManagerScoped && location
+        ? locations.filter(l => l.id === location.id)
+        : locations);
+
+  const displayVehicles = isManagerScoped && location
+    ? vehicles.filter(v => v.location_id === location.id)
+    : vehicles;
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -450,7 +512,7 @@ export default function WasteCollection() {
               />
             </div>
 
-            {locations.length > 0 && (
+            {displayLocations.length > 0 && (
               <div>
                 <label className="text-eco-secondary text-xs font-semibold mb-3 block uppercase tracking-wider">
                   <FontAwesomeIcon icon={faLocationDot} className="mr-2 text-[10px]" />
@@ -463,14 +525,14 @@ export default function WasteCollection() {
                   className="w-full h-[58px] px-5 rounded-lg bg-eco-bg/60 border border-eco-primary/20 text-eco-text text-base focus:outline-none focus:border-eco-accent/50 transition-colors"
                 >
                   <option value="">Select location</option>
-                  {locations.map(l => (
+                  {displayLocations.map(l => (
                     <option key={l.id} value={l.id}>{l.name === 'Dakshin Kafrul' ? 'Hitech, Kafrul' : l.name}</option>
                   ))}
                 </select>
               </div>
             )}
 
-            {vehicles.length > 0 && (
+            {displayVehicles.length > 0 && (
               <div>
                 <label className="text-eco-secondary text-xs font-semibold mb-3 block uppercase tracking-wider">
                   <FontAwesomeIcon icon={faTruck} className="mr-2 text-[10px]" />
@@ -483,7 +545,7 @@ export default function WasteCollection() {
                   className="w-full h-[58px] px-5 rounded-lg bg-eco-bg/60 border border-eco-primary/20 text-eco-text text-base focus:outline-none focus:border-eco-accent/50 transition-colors"
                 >
                   <option value="">Select vehicle</option>
-                  {vehicles.map(v => (
+                  {displayVehicles.map(v => (
                     <option key={v.id} value={v.id}>{v.plate_number} ({v.vehicle_type?.replace('_', ' ')})</option>
                   ))}
                 </select>

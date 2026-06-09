@@ -2,11 +2,132 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLayerGroup, faFire, faTrashCan, faLocationDot, faExpand } from '@fortawesome/free-solid-svg-icons';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useLocation } from '../../context/LocationContext';
+
+const wardPolygons = {
+  // Helal's Wards: Wards 2, 3, 5, 6, 7 of DNCC (around Pallabi/Mirpur 12)
+  'helal@gmail.com': [
+    {
+      ward: 'Ward 2',
+      color: '#3b82f6', // Blue
+      coordinates: [
+        [23.827, 90.355],
+        [23.835, 90.355],
+        [23.835, 90.366],
+        [23.827, 90.366]
+      ]
+    },
+    {
+      ward: 'Ward 3',
+      color: '#eab308', // Yellow
+      coordinates: [
+        [23.818, 90.355],
+        [23.827, 90.355],
+        [23.827, 90.366],
+        [23.818, 90.366]
+      ]
+    },
+    {
+      ward: 'Ward 5',
+      color: '#10b981', // Green
+      coordinates: [
+        [23.827, 90.366],
+        [23.835, 90.366],
+        [23.835, 90.372],
+        [23.827, 90.372]
+      ]
+    },
+    {
+      ward: 'Ward 6',
+      color: '#8b5cf6', // Purple
+      coordinates: [
+        [23.818, 90.366],
+        [23.827, 90.366],
+        [23.827, 90.372],
+        [23.818, 90.372]
+      ]
+    },
+    {
+      ward: 'Ward 7',
+      color: '#ec4899', // Pink
+      coordinates: [
+        [23.818, 90.372],
+        [23.835, 90.372],
+        [23.835, 90.380],
+        [23.818, 90.380]
+      ]
+    }
+  ],
+  // Karim's Ward: Ward 16 of DNCC (Kafrul)
+  'karim@gmail.com': [
+    {
+      ward: 'Ward 16',
+      color: '#f97316', // Orange
+      coordinates: [
+        [23.783, 90.372],
+        [23.799, 90.372],
+        [23.799, 90.398],
+        [23.783, 90.398]
+      ]
+    }
+  ]
+};
+
+function MapCenterController({ center, locations, activeWards, userEmail }) {
+  const map = useMap();
+  const lastUserRef = useRef(null);
+  const hasFitRef = useRef(false);
+
+  useEffect(() => {
+    if (lastUserRef.current !== userEmail) {
+      hasFitRef.current = false;
+      lastUserRef.current = userEmail;
+    }
+
+    if (hasFitRef.current) return;
+
+    if (activeWards && activeWards.length > 0) {
+      const bounds = L.latLngBounds([]);
+      activeWards.forEach(w => {
+        w.coordinates.forEach(coord => {
+          bounds.extend(coord);
+        });
+      });
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [30, 30] });
+        hasFitRef.current = true;
+        return;
+      }
+    }
+
+    if (locations && locations.length > 0) {
+      const bounds = L.latLngBounds([]);
+      locations.forEach(loc => {
+        if (loc.latitude && loc.longitude) {
+          bounds.extend([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+        }
+      });
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [30, 30] });
+        hasFitRef.current = true;
+        return;
+      }
+    }
+
+    if (center) {
+      map.setView(center, 13.5);
+      hasFitRef.current = true;
+    }
+  }, [center, locations, activeWards, userEmail, map]);
+
+  return null;
+}
 
 // Fix leaflet default markers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -41,7 +162,7 @@ export default function MapExplorer() {
   const [locations, setLocations] = useState([]);
   const [hotspots, setHotspots] = useState([]);
   const [heatmapData, setHeatmapData] = useState([]);
-  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(true);
   const [showHotspots, setShowHotspots] = useState(true);
   const [activeLayer, setActiveLayer] = useState('waste_concentration');
 
@@ -73,7 +194,28 @@ export default function MapExplorer() {
   }
 }, [showHeatmap, activeLayer]);
 
-  const center = [23.791, 90.385];
+  const { user } = useAuth();
+  const { location, isManagerScoped } = useLocation();
+
+  const isHelal = user?.email?.toLowerCase() === 'helal@gmail.com';
+
+  const displayLocations = isHelal
+    ? locations.filter(l => l.id >= 100)
+    : (isManagerScoped && location
+        ? locations.filter(l => l.id === location.id || l.id === 2 || l.id === 3 || l.id === 4 || l.id === 5 || l.id === 6 || l.id === 7)
+        : locations);
+
+  const displayHotspots = hotspots;
+
+  const displayHeatmapData = heatmapData;
+
+  const center = isManagerScoped && location && location.latitude && location.longitude
+    ? [parseFloat(location.latitude), parseFloat(location.longitude)]
+    : [23.791, 90.385];
+
+  const activeWards = user?.email && wardPolygons[user.email.toLowerCase()]
+    ? wardPolygons[user.email.toLowerCase()]
+    : [];
 
   return (
     <div>
@@ -112,8 +254,31 @@ export default function MapExplorer() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
+          <MapCenterController center={center} locations={displayLocations} activeWards={activeWards} userEmail={user?.email} />
+
+          {/* Ward Polygon Boundaries */}
+          {activeWards.map(w => (
+            <Polygon
+              key={w.ward}
+              positions={w.coordinates}
+              pathOptions={{
+                color: w.color,
+                fillColor: w.color,
+                fillOpacity: 0.12,
+                weight: 2,
+                dashArray: '4, 4'
+              }}
+            >
+              <Popup>
+                <div className="font-semibold text-eco-text text-sm">
+                  {w.ward} (Dhaka North City Corporation)
+                </div>
+              </Popup>
+            </Polygon>
+          ))}
+
           {/* Location Markers */}
-          {locations.map(loc => (
+          {displayLocations.map(loc => (
             <Marker key={loc.id} position={[parseFloat(loc.latitude), parseFloat(loc.longitude)]} icon={locationIcon}>
               <Popup>
                 <div className="text-sm">
@@ -130,7 +295,7 @@ export default function MapExplorer() {
           ))}
 
           {/* Hotspot Markers */}
-          {showHotspots && hotspots.map(hs => (
+          {showHotspots && displayHotspots.map(hs => (
             <Marker key={hs.id} position={[parseFloat(hs.latitude), parseFloat(hs.longitude)]} icon={hotspotIcon}>
               <Popup>
                 <div className="text-sm">
@@ -143,7 +308,7 @@ export default function MapExplorer() {
             </Marker>
           ))}
           {/* Heatmap Markers */}
-          {showHeatmap && heatmapData.map((pt, idx) => (
+          {showHeatmap && displayHeatmapData.map((pt, idx) => (
             <Marker key={idx} position={[pt[0], pt[1]]} icon={heatmapIcon}>
               <Popup>
                 <div className="text-sm">
